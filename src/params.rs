@@ -1,6 +1,7 @@
 //! Code to deal with executable parameters.
 
 use std::io::{self, IsTerminal, Write};
+use std::path::PathBuf;
 use termcolor::{Color, ColorSpec, StandardStream, WriteColor};
 
 pub use clap::Parser;
@@ -9,6 +10,13 @@ pub use clap::Parser;
 #[derive(Debug, clap::Parser)]
 #[clap(version, about)]
 pub struct Params {
+    /// URLs to check to changes
+    pub urls: Vec<url::Url>,
+
+    /// Where to store state
+    #[clap(short, long, default_value = "~/.monitorbot")]
+    pub state_dir: PathBuf,
+
     /// Whether or not to output in color
     #[clap(long, default_value = "auto", value_name = "WHEN")]
     pub color: ColorChoice,

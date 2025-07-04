@@ -13,12 +13,17 @@ categories = [] # https://crates.io/category_slugs
 license = "MIT OR Apache-2.0"
 edition = "2024"
 rust-version = "1.85"
+
 [dependencies]
 anyhow = "1.0.95"
 clap = { version = "4.5.27", features = ["derive"] }
+fast_html2md = { version = "0.0.48", features = ["scraper"] }
+reqwest = { version = "0.12.22", default-features = false, features = ["rustls-tls", "gzip", "brotli", "zstd", "deflate"] }
 termcolor = "1.4.1"
+tokio = { version = "1.46.0", features = ["full"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["chrono"] }
+url = "2.5.4"
 
 [lints]
 workspace = true
