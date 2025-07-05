@@ -13,9 +13,9 @@ pub struct Params {
     /// URLs to check to changes
     pub urls: Vec<url::Url>,
 
-    /// Where to store state
-    #[clap(short, long, default_value = "~/.monitorbot")]
-    pub state_dir: PathBuf,
+    /// Where to store state (default: ~/.monitorbot)
+    #[clap(short, long, value_hint=clap::ValueHint::DirPath)]
+    pub state_dir: Option<PathBuf>,
 
     /// Whether or not to output in color
     #[clap(long, default_value = "auto", value_name = "WHEN")]
@@ -62,6 +62,17 @@ impl Params {
         } else {
             self.color.into()
         }
+    }
+
+    /// Get the directory to store state in.
+    ///
+    /// Clap’s `default_value` functionality doesn’t support dynamic values.
+    pub fn state_dir_path(&self) -> PathBuf {
+        self.state_dir.clone().unwrap_or_else(|| {
+            std::env::home_dir()
+                .unwrap_or_else(|| PathBuf::from("."))
+                .join(".monitorbot")
+        })
     }
 }
 

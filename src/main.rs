@@ -5,6 +5,7 @@ use encoding_rs::Encoding;
 use mime::Mime;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::fs;
 use std::process::ExitCode;
 use thiserror::Error;
 use url::Url;
@@ -154,7 +155,10 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
         .connection_verbose(true)
         .build()?;
 
-    eprintln!("state dir: {}", &params.state_dir.display());
+    fs::DirBuilder::new()
+        .recursive(true)
+        .create(params.state_dir_path())?;
+
     for url in &params.urls {
         let url = url.clone();
         println!("Request URL: {url}");
