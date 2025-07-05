@@ -1,7 +1,12 @@
 //! monitorbot executable.
 
+use bytes::Bytes;
+use encoding_rs::Encoding;
+use mime::Mime;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::process::ExitCode;
+use thiserror::Error;
 use url::Url;
 
 mod logging;
@@ -9,6 +14,7 @@ mod params;
 
 use params::{Params, Parser};
 
+/// Default user agent to use when making HTTP requests.
 static USER_AGENT: &str =
     concat!(env!("CARGO_PKG_NAME"), "/", env!("CARGO_PKG_VERSION"));
 
@@ -22,6 +28,114 @@ async fn main() -> ExitCode {
         params.warn(format!("Error: {error:#}\n")).unwrap();
         ExitCode::FAILURE
     })
+}
+
+/// Errors resulting from processing an HTTP response.
+#[derive(Error, Debug)]
+pub enum ResponseError {
+    /// Could not convert header value to string.
+    #[error("could not convert header value to string")]
+    InvalidStr(#[from] http::header::ToStrError),
+
+    /// Could not convert header value to MIME media type.
+    #[error("could not convert header value to MIME media type")]
+    InvalidMediaType(#[from] mime::FromStrError),
+
+    /// Unknown charset in header.
+    #[error("unknown charset {0}")]
+    InvalidCharset(String),
+}
+
+/// An HTTP response that can be serialized.
+#[derive(serde::Serialize, serde::Deserialize)]
+struct Response {
+    /// The URL that actually produced the response.
+    pub final_url: Url,
+
+    /// The HTTP version of the response.
+    #[serde(with = "http_serde::version")]
+    pub version: http::Version,
+
+    /// The HTTP status code of the response.
+    #[serde(with = "http_serde::status_code")]
+    pub status: http::StatusCode,
+
+    /// The HTTP headers of the response.
+    #[serde(with = "http_serde::header_map")]
+    pub headers: http::HeaderMap,
+
+    /// The body returned by the response.
+    pub body: Bytes,
+}
+
+impl Response {
+    /// From [`reqwest::Response`].
+    pub async fn from_reqwest(
+        response: reqwest::Response,
+    ) -> reqwest::Result<Self> {
+        Ok(Self {
+            final_url: response.url().clone(),
+            version: response.version(),
+            status: response.status(),
+            headers: response.headers().clone(),
+            body: response.bytes().await?,
+        })
+    }
+
+    /// Get the content-type.
+    ///
+    /// Based on [`reqwest::Response::text_with_charset()`].
+    pub fn content_type(&self) -> Result<Option<Mime>, ResponseError> {
+        // FIXME? ignores multiple values
+        self.headers
+            .get(http::header::CONTENT_TYPE)
+            .map(|value| {
+                value.to_str().map_err(ResponseError::InvalidStr).and_then(
+                    |value| {
+                        value.parse().map_err(ResponseError::InvalidMediaType)
+                    },
+                )
+            })
+            .transpose()
+    }
+
+    /// Get the charset.
+    ///
+    /// Based on [`reqwest::Response::text_with_charset()`].
+    pub fn charset(&self) -> Result<Option<String>, ResponseError> {
+        // FIXME? return &str?
+        Ok(self
+            .content_type()?
+            .and_then(|media_type| {
+                media_type
+                    .get_param(mime::CHARSET)
+                    .map(|name| name.to_string())
+            }))
+    }
+
+    /// Get the charset.
+    ///
+    /// Based on [`reqwest::Response::text_with_charset()`].
+    pub fn charset_encoding(
+        &self,
+    ) -> Result<Option<&'static Encoding>, ResponseError> {
+        self.charset()?
+            .map(|charset| {
+                Encoding::for_label(charset.as_bytes())
+                    .ok_or(ResponseError::InvalidCharset(charset))
+            })
+            .transpose()
+    }
+
+    /// Get the response body as text.
+    ///
+    /// If the response does not specify a charset, this defaults to UTF-8.
+    pub fn text(&self) -> Result<Cow<'_, str>, ResponseError> {
+        // FIXME change fallback to Windows Latin 1?
+        let encoding = self.charset_encoding()?.unwrap_or(encoding_rs::UTF_8);
+        let (text, _actual_encoding, _mangled) = encoding.decode(&self.body);
+        Ok(text)
+    }
 }
 
 /// Do the actual work.
@@ -44,28 +158,29 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
     for url in &params.urls {
         let url = url.clone();
         println!("Request URL: {url}");
-        let res = client.get(url).send().await?;
 
-        let actual_url = res.url().clone();
-        println!("Actual URL:  {actual_url}");
-        eprintln!("Response: {:?} {}", res.version(), res.status());
-        eprintln!("Headers: {:#?}\n", res.headers());
+        let response =
+            Response::from_reqwest(client.get(url).send().await?).await?;
+        println!("Actual URL:  {}", &response.final_url);
+        eprintln!("Response: {:?} {}", response.version, response.status);
+        eprintln!("Headers: {:#?}\n", response.headers);
 
-        let body = res.text().await?;
-        let md = render_html(&body, &actual_url);
-
+        // FIXME check the content-type; handle non-HTML.
+        let body = response.text()?;
+        let md = render_html(&body, &response.final_url);
         println!("{md}");
     }
 
     Ok(ExitCode::SUCCESS)
 }
 
-fn render_html(html: &str, url: &Url) -> String {
+/// Render HTML as Markdown.
+fn render_html<S: AsRef<str>>(html: S, url: &Url) -> String {
     html2md::parse_html_custom_base(
-        &html,
+        html.as_ref(),
         &HashMap::new(),
         true,
         &Some(url.clone()),
     )
-    .replace("\n", "\n\n") // FIXME
+    .replace('\n', "\n\n") // FIXME
 }
