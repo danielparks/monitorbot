@@ -6,6 +6,7 @@ use mime::Mime;
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::fs;
+use std::os::unix::fs::symlink;
 use std::process::ExitCode;
 use thiserror::Error;
 use url::Url;
@@ -153,17 +154,41 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
         .connection_verbose(true)
         .build()?;
 
+    let state_dir_path = params.state_dir_path();
     fs::DirBuilder::new()
         .recursive(true)
-        .create(params.state_dir_path())?;
+        .create(&state_dir_path)?;
 
-    for url in &params.urls {
-        let url = url.clone();
-        println!("Request URL: {url}");
+    for request_url in &params.urls {
+        println!("Request URL: {request_url}");
 
-        let response =
-            Response::from_reqwest(client.get(url).send().await?).await?;
+        let response = Response::from_reqwest(
+            client.get(request_url.clone()).send().await?,
+        )
+        .await?;
         println!("Actual URL:  {}", &response.url);
+
+        // FIXME: atomic write
+        let mut response_file_name = fs_safe_url(&response.url);
+        response_file_name.push_str(".json");
+        let response_path = state_dir_path.join(&response_file_name);
+        std::fs::write(&response_path, serde_json::to_string(&response)?)?;
+
+        if response.url != *request_url {
+            // FIXME do this for any other steps in the redirect chain.
+            let mut file_name = fs_safe_url(request_url);
+            file_name.push_str(".json");
+            let request_path = state_dir_path.join(file_name);
+
+            // FIXME make this atomic
+            if request_path.exists() {
+                fs::remove_file(&request_path)?;
+            }
+
+            // They’re in the same directory, so just link to the file name.
+            symlink(&response_file_name, &request_path)?;
+        }
+
         eprintln!("Response: {:?} {}", response.version, response.status);
         eprintln!("Headers: {:#?}\n", response.headers);
 
@@ -176,6 +201,18 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
     Ok(ExitCode::SUCCESS)
 }
 
+/// Make a filesystem-safe version of the URL.
+fn fs_safe_url(url: &Url) -> String {
+    // FIXME does not work on Windows.
+    let s = url.as_str();
+    assert_ne!(s, "");
+    assert_ne!(s, ".");
+    assert_ne!(s, "..");
+    s.replace('\\', "\\\\")
+        .replace('|', r"\|")
+        .replace('/', "|")
+}
+
 /// Render HTML as Markdown.
 fn render_html<S: AsRef<str>>(html: S, url: &Url) -> String {
     html2md::parse_html_custom_base(
@@ -185,4 +222,28 @@ fn render_html<S: AsRef<str>>(html: S, url: &Url) -> String {
         &Some(url.clone()),
     )
     .replace('\n', "\n\n") // FIXME
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use assert2::check;
+
+    /// Convert a `&str` to a `Url`.
+    fn u(s: &'static str) -> Url {
+        Url::parse(s).unwrap()
+    }
+
+    #[test]
+    fn test_fs_safe_url() {
+        check!(
+            fs_safe_url(&u("https://demon.horse/hireme/#fragment"))
+                == "https:||demon.horse|hireme|#fragment"
+        );
+        check!(fs_safe_url(&u("a://a/b")) == "a:||a|b");
+        check!(
+            fs_safe_url(&u(r"a://a/foo\back|pipe\|backpipe"))
+                == r"a:||a|foo\\back\|pipe\\\|backpipe"
+        );
+    }
 }
