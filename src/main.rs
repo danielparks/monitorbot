@@ -105,13 +105,11 @@ impl Response {
     /// Based on [`reqwest::Response::text_with_charset()`].
     pub fn charset(&self) -> Result<Option<String>, ResponseError> {
         // FIXME? return &str?
-        Ok(self
-            .content_type()?
-            .and_then(|media_type| {
-                media_type
-                    .get_param(mime::CHARSET)
-                    .map(|name| name.to_string())
-            }))
+        Ok(self.content_type()?.and_then(|media_type| {
+            media_type
+                .get_param(mime::CHARSET)
+                .map(|name| name.to_string())
+        }))
     }
 
     /// Get the charset.
