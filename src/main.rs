@@ -51,7 +51,7 @@ pub enum ResponseError {
 #[derive(serde::Serialize, serde::Deserialize)]
 struct Response {
     /// The URL that actually produced the response.
-    pub final_url: Url,
+    pub url: Url,
 
     /// The HTTP version of the response.
     #[serde(with = "http_serde::version")]
@@ -75,7 +75,7 @@ impl Response {
         response: reqwest::Response,
     ) -> reqwest::Result<Self> {
         Ok(Self {
-            final_url: response.url().clone(),
+            url: response.url().clone(),
             version: response.version(),
             status: response.status(),
             headers: response.headers().clone(),
@@ -165,13 +165,13 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
 
         let response =
             Response::from_reqwest(client.get(url).send().await?).await?;
-        println!("Actual URL:  {}", &response.final_url);
+        println!("Actual URL:  {}", &response.url);
         eprintln!("Response: {:?} {}", response.version, response.status);
         eprintln!("Headers: {:#?}\n", response.headers);
 
         // FIXME check the content-type; handle non-HTML.
         let body = response.text()?;
-        let md = render_html(&body, &response.final_url);
+        let md = render_html(&body, &response.url);
         println!("{md}");
     }
 
