@@ -160,25 +160,31 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
         .create(&state_dir_path)?;
 
     for request_url in &params.urls {
-        println!("Request URL: {request_url}");
+        let mut file_name = fs_safe_url(request_url);
+        file_name.push_str(".json");
+        let request_path = state_dir_path.join(file_name);
 
+        let old_response: Option<Response> = if request_path.exists() {
+            Some(serde_json::from_slice(&std::fs::read(&request_path)?)?)
+        } else {
+            None
+        };
+
+        // FIXME use etag/last-modified to check if possible.
         let response = Response::from_reqwest(
             client.get(request_url.clone()).send().await?,
         )
         .await?;
-        println!("Actual URL:  {}", &response.url);
 
-        // FIXME: atomic write
         let mut response_file_name = fs_safe_url(&response.url);
         response_file_name.push_str(".json");
         let response_path = state_dir_path.join(&response_file_name);
+
+        // FIXME: atomic write
         std::fs::write(&response_path, serde_json::to_string(&response)?)?;
 
         if response.url != *request_url {
             // FIXME do this for any other steps in the redirect chain.
-            let mut file_name = fs_safe_url(request_url);
-            file_name.push_str(".json");
-            let request_path = state_dir_path.join(file_name);
 
             // FIXME make this atomic
             if request_path.exists() {
@@ -189,13 +195,30 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
             symlink(&response_file_name, &request_path)?;
         }
 
-        eprintln!("Response: {:?} {}", response.version, response.status);
-        eprintln!("Headers: {:#?}\n", response.headers);
+        let old_md = if let Some(old_response) = old_response {
+            // Shortcut
+            if old_response.body == response.body {
+                continue;
+            }
+
+            // FIXME check the content-type; handle non-HTML.
+            Some(render_html(&old_response.text()?, &old_response.url))
+        } else {
+            None
+        };
 
         // FIXME check the content-type; handle non-HTML.
-        let body = response.text()?;
-        let md = render_html(&body, &response.url);
-        println!("{md}");
+        let new_md = render_html(&response.text()?, &response.url);
+        if let Some(old_md) = old_md {
+            if new_md == old_md {
+                continue;
+            }
+
+            // FIXME print diff
+            println!("{new_md}");
+        } else {
+            println!("{new_md}");
+        }
     }
 
     Ok(ExitCode::SUCCESS)
