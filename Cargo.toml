@@ -2,7 +2,7 @@
 name = "monitorbot"
 version = "0.1.0"
 authors = ["Daniel Parks <oss-monitorbot@demonhorse.org>"]
-description = ""
+description = "Monitor a web page for changes"
 homepage = "https://github.com/danielparks/monitorbot"
 repository = "https://github.com/danielparks/monitorbot"
 documentation = "https://github.com/danielparks/monitorbot"

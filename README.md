@@ -1,7 +1,18 @@
-# monitorbot
+# Monitor a web page for changes
 
-Generated from template https://github.com/danielparks/danielparks-template.rs
-with [cargo-generate](https://github.com/ashleygwilliams/cargo-generate).
+This is very pre-release.
+
+```diff
+❯ cargo run -- http://demon.horse/hireme/
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.16s
+     Running `target/debug/monitorbot 'http://demon.horse/hireme/'`
+
+ I have extensive experience taking projects from conception to production. I spent years helping small businesses define and build web applications and tools. I’ve both built applications from the ground up and added features to old, hairy codebases. I know when to go fast and dirty, and when to go slow and clean.
++
++I’m looking for a non-management technical leadership position. I’m flexible about what languages are involved, but I’m particularly interested in writing Rust, Python, Go, or JavaScript. I hope to work closely with other engineers —I believe that teams succeed when members support each other and grow together.
+
+ ### 2015 to 2019 —Puppet —Senior Software Engineer, Manager of Engineering
+```
 
 ## Installation
 
