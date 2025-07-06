@@ -7,8 +7,10 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::collections::vec_deque::VecDeque;
 use std::fs;
+use std::io;
 use std::os::unix::fs::symlink;
 use std::process::ExitCode;
+use termcolor::{Color, ColorSpec};
 use thiserror::Error;
 use url::Url;
 
@@ -214,7 +216,7 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
             continue;
         }
 
-        print_pretty_diff(&old_md, &new_md);
+        print_pretty_diff(&mut params.out_stream(), &old_md, &new_md);
     }
 
     Ok(ExitCode::SUCCESS)
@@ -245,11 +247,19 @@ fn render_html<S: AsRef<str>>(html: S, url: &Url) -> String {
 
 /// Print a pretty diff.
 #[allow(clippy::iter_with_drain)] // Lint is incorrect
-fn print_pretty_diff(old: &str, new: &str) {
+fn print_pretty_diff<S>(out: &mut S, old: &str, new: &str)
+where
+    S: termcolor::WriteColor + io::Write,
+{
     const CONTEXT_LEN: usize = 2;
 
     let mut context = VecDeque::new();
     let mut lines_since_diff: Option<usize> = None;
+
+    let mut old_color = ColorSpec::new();
+    old_color.set_fg(Some(Color::Red)).set_intense(true);
+    let mut new_color = ColorSpec::new();
+    new_color.set_fg(Some(Color::Green)).set_intense(true);
 
     for diff in diff::lines(old, new) {
         match diff {
@@ -257,14 +267,18 @@ fn print_pretty_diff(old: &str, new: &str) {
                 for line in context.drain(..) {
                     println!(" {line}");
                 }
-                println!("-{old_line}");
+                out.set_color(&old_color).unwrap();
+                writeln!(out, "-{old_line}").unwrap();
+                out.reset().unwrap();
                 lines_since_diff = Some(0);
             }
             diff::Result::Right(new_line) => {
                 for line in context.drain(..) {
                     println!(" {line}");
                 }
-                println!("+{new_line}");
+                out.set_color(&new_color).unwrap();
+                writeln!(out, "+{new_line}").unwrap();
+                out.reset().unwrap();
                 lines_since_diff = Some(0);
             }
             diff::Result::Both(line, _) => {
