@@ -164,11 +164,11 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
 
     for request_url in &params.urls {
         let mut file_name = fs_safe_url(request_url);
-        file_name.push_str(".json");
+        file_name.push_str(".ron");
         let request_path = state_dir_path.join(file_name);
 
         let old_response: Option<Response> = if request_path.exists() {
-            Some(serde_json::from_slice(&std::fs::read(&request_path)?)?)
+            Some(ron::de::from_bytes(&std::fs::read(&request_path)?)?)
         } else {
             None
         };
@@ -180,11 +180,17 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
         .await?;
 
         let mut response_file_name = fs_safe_url(&response.url);
-        response_file_name.push_str(".json");
+        response_file_name.push_str(".ron");
         let response_path = state_dir_path.join(&response_file_name);
 
         // FIXME: atomic write
-        std::fs::write(&response_path, serde_json::to_string(&response)?)?;
+        std::fs::write(
+            &response_path,
+            ron::ser::to_string_pretty(
+                &response,
+                ron::ser::PrettyConfig::default(),
+            )?,
+        )?;
 
         if response.url != *request_url {
             // FIXME do this for any other steps in the redirect chain.
