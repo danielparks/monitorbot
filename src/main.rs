@@ -273,6 +273,8 @@ where
                 for line in context.drain(..) {
                     println!(" {line}");
                 }
+                // Use `unwrap()` here because these would be IO errors, so we
+                // may as well act like `println!`.
                 out.set_color(&old_color).unwrap();
                 writeln!(out, "-{old_line}").unwrap();
                 out.reset().unwrap();
@@ -282,6 +284,8 @@ where
                 for line in context.drain(..) {
                     println!(" {line}");
                 }
+                // Use `unwrap()` here because these would be IO errors, so we
+                // may as well act like `println!`.
                 out.set_color(&new_color).unwrap();
                 writeln!(out, "+{new_line}").unwrap();
                 out.reset().unwrap();
