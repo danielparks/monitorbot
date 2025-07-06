@@ -5,6 +5,7 @@ use encoding_rs::Encoding;
 use mime::Mime;
 use std::borrow::Cow;
 use std::collections::HashMap;
+use std::collections::vec_deque::VecDeque;
 use std::fs;
 use std::os::unix::fs::symlink;
 use std::process::ExitCode;
@@ -202,23 +203,18 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
             }
 
             // FIXME check the content-type; handle non-HTML.
-            Some(render_html(&old_response.text()?, &old_response.url))
+            render_html(&old_response.text()?, &old_response.url)
         } else {
-            None
+            String::new()
         };
 
         // FIXME check the content-type; handle non-HTML.
         let new_md = render_html(&response.text()?, &response.url);
-        if let Some(old_md) = old_md {
-            if new_md == old_md {
-                continue;
-            }
-
-            // FIXME print diff
-            println!("{new_md}");
-        } else {
-            println!("{new_md}");
+        if new_md == old_md {
+            continue;
         }
+
+        print_pretty_diff(&old_md, &new_md);
     }
 
     Ok(ExitCode::SUCCESS)
@@ -245,6 +241,51 @@ fn render_html<S: AsRef<str>>(html: S, url: &Url) -> String {
         &Some(url.clone()),
     )
     .replace('\n', "\n\n") // FIXME
+}
+
+/// Print a pretty diff.
+#[allow(clippy::iter_with_drain)] // Lint is incorrect
+fn print_pretty_diff(old: &str, new: &str) {
+    const CONTEXT_LEN: usize = 2;
+
+    let mut context = VecDeque::new();
+    let mut lines_since_diff: Option<usize> = None;
+
+    for diff in diff::lines(old, new) {
+        match diff {
+            diff::Result::Left(old_line) => {
+                for line in context.drain(..) {
+                    println!(" {line}");
+                }
+                println!("-{old_line}");
+                lines_since_diff = Some(0);
+            }
+            diff::Result::Right(new_line) => {
+                for line in context.drain(..) {
+                    println!(" {line}");
+                }
+                println!("+{new_line}");
+                lines_since_diff = Some(0);
+            }
+            diff::Result::Both(line, _) => {
+                if let Some(count) = lines_since_diff {
+                    println!(" {line}");
+                    #[allow(clippy::arithmetic_side_effects)]
+                    let count = count + 1;
+                    if count >= CONTEXT_LEN {
+                        lines_since_diff = None;
+                    } else {
+                        lines_since_diff = Some(count);
+                    }
+                } else {
+                    context.push_back(line);
+                    if context.len() > CONTEXT_LEN {
+                        context.pop_front();
+                    }
+                }
+            }
+        }
+    }
 }
 
 #[cfg(test)]

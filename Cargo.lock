@@ -1099,6 +1099,7 @@ dependencies = [
  "assert2",
  "bytes",
  "clap",
+ "diff",
  "encoding_rs",
  "fast_html2md",
  "http",
