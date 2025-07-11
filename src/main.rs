@@ -218,11 +218,11 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
 
         // FIXME check the content-type; handle non-HTML.
         let new_md = render_html(&response.text()?, &response.url);
-        if new_md == old_md {
-            continue;
+        if params.no_diff {
+            println!("{new_md}");
+        } else if new_md != old_md {
+            print_pretty_diff(&mut params.out_stream(), &old_md, &new_md);
         }
-
-        print_pretty_diff(&mut params.out_stream(), &old_md, &new_md);
     }
 
     Ok(ExitCode::SUCCESS)

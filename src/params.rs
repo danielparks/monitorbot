@@ -13,6 +13,10 @@ pub struct Params {
     /// URLs to check to changes
     pub urls: Vec<url::Url>,
 
+    /// Whether or not to just render the page ignoring changes
+    #[clap(long)]
+    pub no_diff: bool,
+
     /// Where to store state (default: ~/.monitorbot)
     #[clap(short, long, value_hint=clap::ValueHint::DirPath)]
     pub state_dir: Option<PathBuf>,
