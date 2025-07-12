@@ -2,9 +2,9 @@
 
 use bytes::Bytes;
 use encoding_rs::Encoding;
+use htmd::HtmlToMarkdown;
 use mime::Mime;
 use std::borrow::Cow;
-use std::collections::HashMap;
 use std::collections::vec_deque::VecDeque;
 use std::fs;
 use std::io;
@@ -211,13 +211,13 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
             }
 
             // FIXME check the content-type; handle non-HTML.
-            render_html(&old_response.text()?, &old_response.url)
+            render_html(&old_response.text()?, &old_response.url)?
         } else {
             String::new()
         };
 
         // FIXME check the content-type; handle non-HTML.
-        let new_md = render_html(&response.text()?, &response.url);
+        let new_md = render_html(&response.text()?, &response.url)?;
         if params.no_diff {
             println!("{new_md}");
         } else if new_md != old_md {
@@ -241,14 +241,12 @@ fn fs_safe_url(url: &Url) -> String {
 }
 
 /// Render HTML as Markdown.
-fn render_html<S: AsRef<str>>(html: S, url: &Url) -> String {
-    html2md::parse_html_custom_base(
-        html.as_ref(),
-        &HashMap::new(),
-        true,
-        &Some(url.clone()),
-    )
-    .replace('\n', "\n\n") // FIXME
+fn render_html<S: AsRef<str>>(
+    html: S,
+    _base_url: &Url,
+) -> anyhow::Result<String> {
+    // FIXME output links relative to _base_url.
+    Ok(HtmlToMarkdown::builder().build().convert(html.as_ref())?)
 }
 
 /// Print a pretty diff.
