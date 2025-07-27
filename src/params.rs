@@ -32,7 +32,6 @@ pub struct Params {
 
 impl Params {
     /// Print a warning message in error color to `err_stream()`.
-    #[allow(dead_code)]
     pub fn warn<S: AsRef<str>>(&self, message: S) -> io::Result<()> {
         let mut err_out = self.err_stream();
         err_out.set_color(&error_color())?;
@@ -43,13 +42,11 @@ impl Params {
     }
 
     /// Get stream to use for standard output.
-    #[allow(dead_code)]
     pub fn out_stream(&self) -> StandardStream {
         StandardStream::stdout(self.color_choice(&io::stdout()))
     }
 
     /// Get stream to use for errors.
-    #[allow(dead_code)]
     pub fn err_stream(&self) -> StandardStream {
         StandardStream::stderr(self.color_choice(&io::stderr()))
     }
