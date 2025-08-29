@@ -250,7 +250,7 @@ fn render_html<S: AsRef<str>>(
 }
 
 /// Print a pretty diff.
-#[allow(clippy::iter_with_drain)] // Lint is incorrect
+#[expect(clippy::iter_with_drain, reason = "lint is incorrect")]
 fn print_pretty_diff<S>(out: &mut S, old: &str, new: &str)
 where
     S: termcolor::WriteColor + io::Write,
@@ -292,7 +292,10 @@ where
             diff::Result::Both(line, _) => {
                 if let Some(count) = lines_since_diff {
                     println!(" {line}");
-                    #[allow(clippy::arithmetic_side_effects)]
+                    #[expect(
+                        clippy::arithmetic_side_effects,
+                        reason = "limited by CONTEXT_LEN"
+                    )]
                     let count = count + 1;
                     if count >= CONTEXT_LEN {
                         lines_since_diff = None;
