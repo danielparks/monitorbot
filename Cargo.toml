@@ -1,6 +1,6 @@
 [package]
 name = "monitorbot"
-version = "0.1.0"
+version = "0.0.1"
 authors = ["Daniel Parks <oss-monitorbot@demonhorse.org>"]
 description = "Monitor a web page for changes"
 homepage = "https://github.com/danielparks/monitorbot"
