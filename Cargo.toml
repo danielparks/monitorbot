@@ -34,6 +34,10 @@ tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.22", features = ["chrono"] }
 url = { version = "2.5.8", features = ["serde"] }
 
+[profile.release]
+codegen-units = 1
+lto = true
+
 [lints]
 workspace = true
 
