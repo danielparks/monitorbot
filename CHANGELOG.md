@@ -21,7 +21,7 @@ All notable changes to this project will be documented in this file.
 ### Miscellaneous
 
 * Enable [“fat” link time optimization][lto] for release builds. On macOS, the resulting binary went from 8.9 MB (101 seconds) to 7.5 MB (123 seconds).
-* Fix build on Windows.
+* Fix build on Windows, then disable Windows build because the function to make a URL filesystem safe is not compatible with Windows.
 
 [lto]: https://doc.rust-lang.org/rustc/codegen-options/index.html#lto
 

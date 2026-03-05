@@ -35,8 +35,6 @@ page][releases]. Just extract the archive and copy the file inside into your
     [ARM](https://github.com/danielparks/monitorbot/releases/latest/download/monitorbot-aarch64-unknown-linux-musl.tar.gz)
   * macOS: [Intel](https://github.com/danielparks/monitorbot/releases/latest/download/monitorbot-x86_64-apple-darwin.tar.gz),
     [Apple silicon](https://github.com/danielparks/monitorbot/releases/latest/download/monitorbot-aarch64-apple-darwin.tar.gz)
-  * [Windows on x86-64](https://github.com/danielparks/monitorbot/releases/latest/download/monitorbot-x86_64-pc-windows-msvc.zip)
-
 
 ## Rust Crate
 
