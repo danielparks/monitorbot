@@ -8,7 +8,7 @@ use std::borrow::Cow;
 use std::collections::vec_deque::VecDeque;
 use std::fs;
 use std::io;
-use std::os::unix::fs::symlink;
+use std::path::Path;
 use std::process::ExitCode;
 use termcolor::{Color, ColorSpec};
 use thiserror::Error;
@@ -200,8 +200,8 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
                 fs::remove_file(&request_path)?;
             }
 
-            // They’re in the same directory, so just link to the file name.
-            symlink(&response_file_name, &request_path)?;
+            // They’re in the same directory, so just link/copy to the response.
+            cache_redirect(&response_file_name, &request_path)?;
         }
 
         let old_md = if let Some(old_response) = old_response {
@@ -226,6 +226,27 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
     }
 
     Ok(ExitCode::SUCCESS)
+}
+
+/// Deal with a caching a redirect.
+///
+/// This makes a symlink from `request_path` to `response_path` on UNIX, and
+/// copies the file on other platforms.
+///
+/// # Errors
+///
+/// Returns [`io::Error`] for errors.
+fn cache_redirect(
+    response_path: &impl AsRef<Path>,
+    request_path: &impl AsRef<Path>,
+) -> io::Result<()> {
+    if cfg!(all(not(target_os = "hermit"), unix)) {
+        // UNIX (platforms for which `std::os::unix::fs` exists)
+        std::os::unix::fs::symlink(response_path, request_path)
+    } else {
+        // Not UNIX
+        fs::copy(response_path, request_path).map(|_| ())
+    }
 }
 
 /// Make a filesystem-safe version of the URL.
