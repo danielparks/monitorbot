@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## main branch
 
+### Security
+
+* Multiple security vulnerabilities in [aws-lc-rs] again. Monitorbot does not use the crate directly, but it appears to be used by [rustls] for TLS. At worst, the vulnerability might allow someone to spoof a TLS-authenticated site.
+
+  * [GHSA-394x-vwmw-crm3]: AWS-LC X.509 Name Constraints Bypass via Wildcard/Unicode CN
+  * [GHSA-9f94-5g5w-gf6r]: CRL Distribution Point Scope Check Logic Error in AWS-LC
+
+[aws-lc-rs]: https://github.com/aws/aws-lc-rs/
+[rustls]: https://github.com/rustls/rustls
+[GHSA-394x-vwmw-crm3]: https://github.com/advisories/GHSA-394x-vwmw-crm3
+[GHSA-9f94-5g5w-gf6r]: https://github.com/advisories/GHSA-9f94-5g5w-gf6r
+
 ## Release 0.0.2 (2026-03-05)
 
 ### Security
