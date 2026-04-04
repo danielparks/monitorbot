@@ -7,8 +7,8 @@ use mime::Mime;
 use std::borrow::Cow;
 use std::collections::vec_deque::VecDeque;
 use std::fs;
-use std::io;
-use std::path::Path;
+use std::io::{self, Write};
+use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use termcolor::{Color, ColorSpec};
 use thiserror::Error;
@@ -183,14 +183,17 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
         response_file_name.push_str(".ron");
         let response_path = state_dir_path.join(&response_file_name);
 
-        // FIXME: atomic write
-        std::fs::write(
-            &response_path,
+        // Atomic write.
+        let tmp_path = response_path.with_added_extension(".tmp");
+        let (tmp_path, mut file) = create_unique_file(&tmp_path)?;
+        file.write_all(
             ron::ser::to_string_pretty(
                 &response,
                 ron::ser::PrettyConfig::default(),
-            )?,
+            )?
+            .as_bytes(),
         )?;
+        std::fs::rename(&tmp_path, &response_path)?;
 
         if response.url != *request_url {
             // FIXME do this for any other steps in the redirect chain.
@@ -259,6 +262,41 @@ fn fs_safe_url(url: &Url) -> String {
     s.replace('\\', "\\\\")
         .replace('|', r"\|")
         .replace('/', "|")
+}
+
+/// Create a unique file in a directory.
+///
+/// # Errors
+///
+/// This will return an error with [`io::ErrorKind::AlreadyExists`] if it can’t
+/// create a file. It will add a number to the file name and increase the
+/// number until it finds an available name, or after 100 tries.
+fn create_unique_file(base_name: &Path) -> io::Result<(PathBuf, fs::File)> {
+    const MAX_ATTEMPTS: usize = 100;
+
+    for i in 1..=MAX_ATTEMPTS {
+        let candidate = base_name.with_added_extension(format!(".{i}"));
+        match exclusive_create_file(&candidate) {
+            Err(error) if error.kind() == io::ErrorKind::AlreadyExists => {}
+            Err(error) => return Err(error),
+            Ok(file) => return Ok((candidate, file)),
+        }
+    }
+
+    Err(io::ErrorKind::AlreadyExists.into())
+}
+
+/// Create a file; fail if it already exists.
+///
+/// # Errors
+///
+/// It will return an error if the file already exists, or if there was some
+/// other reason it could not create the file.
+fn exclusive_create_file(path: &Path) -> io::Result<fs::File> {
+    fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(path)
 }
 
 /// Render HTML as Markdown.
