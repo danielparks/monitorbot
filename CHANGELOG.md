@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## main branch
 
 * Write state atomically.
+* If we fail to read state, i.e. old response information, print a warning and treat it as if there was no old response.
 * Bump MSRV to 1.91 for `Path::with_added_extension()`.
 
 ## Release 0.0.3 (2026-03-20)

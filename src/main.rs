@@ -168,7 +168,13 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
         let request_path = state_dir_path.join(file_name);
 
         let old_response: Option<Response> = if request_path.exists() {
-            Some(ron::de::from_bytes(&std::fs::read(&request_path)?)?)
+            match load_old_response(&request_path) {
+                Ok(response) => Some(response),
+                Err(error) => {
+                    tracing::warn!("Could not read old response: {error:?}");
+                    None
+                }
+            }
         } else {
             None
         };
@@ -229,6 +235,15 @@ async fn cli(params: &Params) -> anyhow::Result<ExitCode> {
     }
 
     Ok(ExitCode::SUCCESS)
+}
+
+/// Load old response.
+///
+/// # Errors
+///
+/// May return an error from [`fs::read()`] or from [`ron::de::from_bytes()`].
+fn load_old_response(request_path: &Path) -> anyhow::Result<Response> {
+    Ok(ron::de::from_bytes(&std::fs::read(request_path)?)?)
 }
 
 /// Deal with a caching a redirect.
