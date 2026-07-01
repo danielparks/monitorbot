@@ -10,8 +10,11 @@ All notable changes to this project will be documented in this file.
 
 ### Security
 
+* Update [rand] to avoid unsoundness ([RUSTSEC-2026-0097]). Monitorbot was likely not vulnerable.
 * Update [anyhow] to avoid unsoundness ([RUSTSEC-2026-0190]). Monitorbot was likely not vulnerable.
 
+[rand]: https://github.com/rust-random/rand
+[RUSTSEC-2026-0097]: https://rustsec.org/advisories/RUSTSEC-2026-0097.html
 [anyhow]: https://github.com/dtolnay/anyhow
 [RUSTSEC-2026-0190]: https://rustsec.org/advisories/RUSTSEC-2026-0190
 

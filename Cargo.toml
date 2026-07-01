@@ -94,4 +94,4 @@ module_name_repetitions = "allow"
 option_if_let_else = "allow"
 
 [dev-dependencies]
-assert2 = "0.3.16"
+assert2 = "0.4.0"
