@@ -8,6 +8,13 @@ All notable changes to this project will be documented in this file.
 * If we fail to read state, i.e. old response information, print a warning and treat it as if there was no old response.
 * Bump MSRV to 1.91 for `Path::with_added_extension()`.
 
+### Security
+
+* Update [anyhow] to avoid unsoundness ([RUSTSEC-2026-0190]). Monitorbot was likely not vulnerable.
+
+[anyhow]: https://github.com/dtolnay/anyhow
+[RUSTSEC-2026-0190]: https://rustsec.org/advisories/RUSTSEC-2026-0190
+
 ## Release 0.0.3 (2026-03-20)
 
 ### Security
