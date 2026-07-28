@@ -12,11 +12,14 @@ All notable changes to this project will be documented in this file.
 
 * Update [rand] to avoid unsoundness ([RUSTSEC-2026-0097]). Monitorbot was likely not vulnerable.
 * Update [anyhow] to avoid unsoundness ([RUSTSEC-2026-0190]). Monitorbot was likely not vulnerable.
+* Update [quinn-proto] to avoid memory exhaustion vulnerability ([RUSTSEC-2026-0185]).
 
 [rand]: https://github.com/rust-random/rand
-[RUSTSEC-2026-0097]: https://rustsec.org/advisories/RUSTSEC-2026-0097.html
+[RUSTSEC-2026-0097]: https://rustsec.org/advisories/RUSTSEC-2026-0097
 [anyhow]: https://github.com/dtolnay/anyhow
 [RUSTSEC-2026-0190]: https://rustsec.org/advisories/RUSTSEC-2026-0190
+[quinn-proto]: https://github.com/quinn-rs/quinn
+[RUSTSEC-2026-0185]: https://rustsec.org/advisories/RUSTSEC-2026-0185
 
 ## Release 0.0.3 (2026-03-20)
 
