@@ -13,7 +13,9 @@ All notable changes to this project will be documented in this file.
 * Update [rand] to avoid unsoundness ([RUSTSEC-2026-0097]). Monitorbot was likely not vulnerable.
 * Update [anyhow] to avoid unsoundness ([RUSTSEC-2026-0190]). Monitorbot was likely not vulnerable.
 * Update [quinn-proto] to avoid memory exhaustion vulnerability ([RUSTSEC-2026-0185]).
-* Update [rustls] to avoid potential information exposure ([RUSTSEC-2026-0285]).
+* Update [rustls] to avoid various vulnerabilities ([RUSTSEC-2026-0285], [RUSTSEC-2026-0346], [RUSTSEC-2026-0347], [RUSTSEC-2026-0348], [RUSTSEC-2026-0349]).
+* Update [rustls-webpki] and [webpki-root-certs] to distrust known weak intermediate certificates from eMudhra/emSign ([RUSTSEC-2026-0382] and [RUSTSEC-2026-0383], respectively).
+* Update [rustls-webpki] to distrust known weak intermediate certificates from eMudhra/emSign ([RUSTSEC-2026-0382]).
 * Update [tokio] to avoid unsafe I/O ([RUSTSEC-2026-0386]).
 
 [rand]: https://github.com/rust-random/rand
@@ -24,6 +26,14 @@ All notable changes to this project will be documented in this file.
 [RUSTSEC-2026-0185]: https://rustsec.org/advisories/RUSTSEC-2026-0185
 [rustls]: https://github.com/rustls/rustls
 [RUSTSEC-2026-0285]: https://rustsec.org/advisories/RUSTSEC-2026-0285
+[RUSTSEC-2026-0346]: https://rustsec.org/advisories/RUSTSEC-2026-0346
+[RUSTSEC-2026-0347]: https://rustsec.org/advisories/RUSTSEC-2026-0347
+[RUSTSEC-2026-0348]: https://rustsec.org/advisories/RUSTSEC-2026-0348
+[RUSTSEC-2026-0349]: https://rustsec.org/advisories/RUSTSEC-2026-0349
+[rustls-webpki]: https://github.com/rustls/webpki
+[webpki-root-certs]: https://github.com/rustls/webpki-roots
+[RUSTSEC-2026-0382]: https://rustsec.org/advisories/RUSTSEC-2026-0382
+[RUSTSEC-2026-0383]: https://rustsec.org/advisories/RUSTSEC-2026-0383
 [tokio]: https://github.com/tokio-rs/tokio
 [RUSTSEC-2026-0386]: https://rustsec.org/advisories/RUSTSEC-2026-0386
 
